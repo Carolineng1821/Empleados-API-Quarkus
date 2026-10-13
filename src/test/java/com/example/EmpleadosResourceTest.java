@@ -1,0 +1,138 @@
+package com.example;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+import  static org.hamcrest.Matchers.empty;
+@QuarkusTest
+class EmpleadosResourceTest {
+
+    @Test
+    void creaEmpleadoNombreValido() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                        "nombre": "Carolina"
+                        }
+                        """)
+                .when()
+                .post("/empleados")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void rechazaEmpleadoNombreVacio() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {"nombre": ""}
+                """)
+                .when()
+                .post("/empleados")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void listarEmpleados(){
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"nombre": "Empleado GET"}
+                      """)
+                .when()
+                .post("/empleados")
+                .then()
+                .statusCode(204);
+
+        given()
+                .when()
+                .get("/empleados")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("$", not(empty()))
+                .body("find {it.nombre == 'Empleado GET' }.id", notNullValue());
+    }
+
+    @Test
+    void actualizarEmpleado() {
+        given()
+        .contentType(ContentType.JSON)
+                .body("""
+                    {
+                        "nombre": "Ana"
+                    }
+                """)
+                .when()
+                .post("/empleados")
+                .then()
+                .statusCode(204);
+        Long id = ((Number) given()
+                .when()
+                .get("/empleados")
+                .then()
+                .statusCode(200)
+                .extract()
+                .path("find {it.nombre == 'Ana'}.id"))
+                        .longValue();
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {"nombre": "Ana López"}
+                """)
+                .when()
+                .put("/empleados/" + id)
+                .then()
+                .statusCode(200)
+                .body("nombre",equalTo("Ana López"));
+    }
+
+    @Test
+    void eliminarEmpleado() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {
+                        "nombre": "Empleado para eliminar"
+                    }
+                """)
+                .when()
+                .post("/empleados")
+                .then()
+                .statusCode(204);
+        Long id = ((Number) given()
+                .when()
+                .get("/empleados")
+                .then()
+                .statusCode(200)
+                .extract()
+                .path("find {it.nombre == 'Empleado para eliminar'}.id"))
+                .longValue();
+        given()
+                .when()
+                .delete("/empleados/" + id)
+                .then()
+                .statusCode(204);
+        given()
+                .when()
+                .get("/empleados/" + id)
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void eliminarEmpleadoInexistente() {
+        given()
+                .when()
+                .delete("/empleados/123")
+                .then()
+                .statusCode(404);
+    }
+}

@@ -2,6 +2,7 @@
 package com.example;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.PathParam;
@@ -36,7 +37,7 @@ public class EmpleadosResource {
 
     @POST
     @Transactional
-    public void crear(Empleado empleado) {
+    public void crear(@Valid Empleado empleado) {
         empleado.id = null;
         empleado.persist();
     }
@@ -44,7 +45,7 @@ public class EmpleadosResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Response actualizar(@PathParam("id") Long id, Empleado datos) {
+    public Response actualizar(@PathParam("id") Long id, @Valid Empleado datos) {
         Empleado empleado = Empleado.findById(id);
         if (empleado == null) {
             return Response.status(Response.Status.NOT_FOUND)
