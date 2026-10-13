@@ -7,6 +7,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,9 +38,12 @@ public class EmpleadosResource {
 
     @POST
     @Transactional
-    public void crear(@Valid Empleado empleado) {
+    public Response crear(@Valid Empleado empleado) {
         empleado.id = null;
         empleado.persist();
+
+        URI location = URI.create("/empleados/" + empleado.id);
+        return Response.created(location).build();
     }
 
     @PUT

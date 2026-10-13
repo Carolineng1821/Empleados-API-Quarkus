@@ -2,17 +2,20 @@ package com.example;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
-import  static org.hamcrest.Matchers.empty;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.equalTo;
+
 @QuarkusTest
 class EmpleadosResourceTest {
 
     @Test
     void creaEmpleadoNombreValido() {
-        given()
+      Response respuesta = given()
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -22,7 +25,21 @@ class EmpleadosResourceTest {
                 .when()
                 .post("/empleados")
                 .then()
-                .statusCode(204);
+                .statusCode(201)
+                .extract()
+                .response();
+
+        String location = respuesta.getHeader("Location");
+        assertTrue(location.matches(".*/empleados/\\d+$"));
+        String[] partes = location.split("/");
+        Long id = Long.valueOf(partes[partes.length - 1]);
+
+        given()
+                .when()
+                .get("/empleados/" + id)
+                .then()
+                .statusCode(200)
+                .body("nombre", equalTo("Carolina"));
     }
 
     @Test
@@ -49,7 +66,7 @@ class EmpleadosResourceTest {
                 .when()
                 .post("/empleados")
                 .then()
-                .statusCode(204);
+                .statusCode(201);
 
         given()
                 .when()
@@ -73,7 +90,7 @@ class EmpleadosResourceTest {
                 .when()
                 .post("/empleados")
                 .then()
-                .statusCode(204);
+                .statusCode(201);
         Long id = ((Number) given()
                 .when()
                 .get("/empleados")
@@ -106,7 +123,7 @@ class EmpleadosResourceTest {
                 .when()
                 .post("/empleados")
                 .then()
-                .statusCode(204);
+                .statusCode(201);
         Long id = ((Number) given()
                 .when()
                 .get("/empleados")
