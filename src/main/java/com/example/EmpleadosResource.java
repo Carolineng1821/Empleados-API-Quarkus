@@ -9,6 +9,10 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,10 +21,23 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class EmpleadosResource {
 
+
+//BUSCAR
+    @Operation(summary = "Buscar empleados")
+    @APIResponse(responseCode = "200", description = "Lista obtenida")
     @GET
     public List<Empleado> listar() {
         return Empleado.listAll();
     }
+
+
+
+//BUSCAR POR ID
+    @Operation(summary = "Buscar empleado por ID")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Encontrado"),
+            @APIResponse(responseCode = "404", description = "No encontrado")
+    })
 
     @GET
     @Path("/{id}")
@@ -35,6 +52,12 @@ public class EmpleadosResource {
     }
 
 
+//CREAR
+    @Operation(summary = "Crear empleado")
+    @APIResponses({
+            @APIResponse(responseCode = "201", description = "Empleado creado"),
+            @APIResponse(responseCode = "400", description = "Datos invalidos")
+    })
 
     @POST
     @Transactional
@@ -45,6 +68,15 @@ public class EmpleadosResource {
         URI location = URI.create("/empleados/" + empleado.id);
         return Response.created(location).build();
     }
+
+
+//ACTUALIZAR
+    @Operation(summary = "Actualizar empleado")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Actualizado"),
+            @APIResponse(responseCode = "400", description = "Datos inválidos"),
+            @APIResponse(responseCode = "404", description = "No encontrado")
+    })
 
     @PUT
     @Path("/{id}")
@@ -59,6 +91,14 @@ public class EmpleadosResource {
         empleado.nombre = datos.nombre;
         return Response.ok(empleado).build();
     }
+
+
+//ELIMINAR
+    @Operation(summary = "Eliminar empleado")
+    @APIResponses({
+            @APIResponse(responseCode = "204", description = "Eliminado"),
+            @APIResponse(responseCode = "404", description = "No encontrado")
+    })
 
     @DELETE
     @Path("/{id}")
