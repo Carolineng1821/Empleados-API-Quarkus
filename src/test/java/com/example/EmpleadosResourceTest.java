@@ -52,7 +52,14 @@ class EmpleadosResourceTest {
                 .when()
                 .post("/empleados")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("status", equalTo(400))
+                .body("error", equalTo("Error de validación"))
+                .body("mensaje", equalTo("Hay campos inválidos"))
+                .body("detalles.size()", equalTo(1))
+                .body("detalles[0].campo", equalTo("nombre"))
+                .body("detalles[0].mensaje", equalTo("no debe estar vacío"));
+
     }
 
     @Test
