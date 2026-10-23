@@ -7,6 +7,7 @@ API REST para gestionar empleados, desarrollada con Java 21 y Quarkus. Usa Hiber
 - Crear, listar, consultar, actualizar y eliminar empleados.
 - Actualizar parcialmente el departamento, el puesto o el salario mediante `PATCH`.
 - Validar los datos del empleado.
+- Proteger los endpoints con autenticación JWT y roles.
 - Consultar y probar los endpoints mediante Swagger UI.
 - Persistir registros en H2 en disco o en PostgreSQL.
 
@@ -19,6 +20,7 @@ API REST para gestionar empleados, desarrollada con Java 21 y Quarkus. Usa Hiber
 - H2 Database
 - PostgreSQL
 - Docker Compose
+- SmallRye JWT
 - REST y JSON
 - OpenAPI / Swagger UI
 
@@ -37,12 +39,12 @@ El ID se genera al crear el empleado.
 
 | Método | Endpoint | Descripción | Respuestas |
 |---|---|---|---|
-| `POST` | `/empleados` | Crear un empleado | `201`, `400` |
-| `GET` | `/empleados` | Listar empleados | `200` |
-| `GET` | `/empleados/{id}` | Consultar por ID | `200`, `404` |
-| `PUT` | `/empleados/{id}` | Reemplazar los campos del empleado | `200`, `400`, `404` |
-| `PATCH` | `/empleados/{id}` | Actualizar departamento, puesto o salario | `200`, `400`, `404` |
-| `DELETE` | `/empleados/{id}` | Eliminar por ID | `204`, `404` |
+| `POST` | `/empleados` | Crear un empleado | `201`, `400`, `401`, `403` |
+| `GET` | `/empleados` | Listar empleados | `200`, `401`, `403` |
+| `GET` | `/empleados/{id}` | Consultar por ID | `200`, `401`, `403`, `404` |
+| `PUT` | `/empleados/{id}` | Reemplazar los campos del empleado | `200`, `400`, `401`, `403`, `404` |
+| `PATCH` | `/empleados/{id}` | Actualizar departamento, puesto o salario | `200`, `400`, `401`, `403`, `404` |
+| `DELETE` | `/empleados/{id}` | Eliminar por ID | `204`, `401`, `403`, `404` |
 
 `PUT` requiere los cuatro campos del empleado. `PATCH` acepta uno o más de estos campos: `departamento`, `puesto` y `salario`; conserva los campos omitidos y rechaza datos inválidos.
 
@@ -73,12 +75,35 @@ Solicitud `PATCH /empleados/1`:
 
 La respuesta `200 OK` contiene el empleado actualizado. Los demás campos conservan sus valores.
 
-### Códigos HTTP
+## Seguridad JWT
+
+Todos los endpoints requieren un token JWT en el encabezado `Authorization`:
+
+```text
+Authorization: Bearer <token>
+```
+
+- El rol `ADMIN` puede ejecutar todas las operaciones CRUD y listar empleados.
+- El rol `EMPLEADO` puede consultar únicamente `GET /empleados/{id}` cuando el ID coincide con el `sub` del token.
+- Los roles se leen de la propiedad `groups` del JWT.
+- El emisor esperado (`issuer`) es `empleados-api`.
+- La API valida tokens; no incluye un endpoint de inicio de sesión ni emite tokens.
+
+Respuestas de seguridad:
+
+- `401 Unauthorized`: falta el token o no es válido.
+- `403 Forbidden`: el token es válido, pero no tiene permiso para la operación o un empleado intenta consultar otro registro.
+
+En desarrollo y pruebas, Quarkus puede generar claves temporales en memoria. Esta configuración no está habilitada para producción. Para producción se debe configurar la clave pública de confianza y el emisor; las claves privadas y credenciales deben mantenerse fuera del repositorio.
+
+## Códigos HTTP
 
 - `200 OK`: consulta o actualización correcta.
 - `201 Created`: empleado creado.
 - `204 No Content`: empleado eliminado correctamente.
 - `400 Bad Request`: datos inválidos.
+- `401 Unauthorized`: falta el token o no es válido.
+- `403 Forbidden`: el usuario autenticado no tiene permiso para la operación.
 - `404 Not Found`: no existe un empleado con ese ID.
 
 ## Requisitos
@@ -140,7 +165,7 @@ Para ejecutar las pruebas automatizadas:
 .\mvnw.cmd test
 ```
 
-Última ejecución registrada: **11 pruebas, 0 fallos y 0 errores**. Las pruebas usan el perfil `test` y una base H2 en memoria.
+Última ejecución registrada: **23/10/2026, 17 pruebas, 0 fallos y 0 errores**. Las pruebas usan el perfil `test` y una base H2 en memoria. La suite incluye pruebas de autorización y de validación de JWT firmados.
 
 ## Persistencia
 
@@ -185,7 +210,10 @@ empleados-api/
 │   │   └── resources/
 │   │       └── application.properties
 │   └── test/
-│       └── java/com/example/EmpleadosResourceTest.java
+│       └── java/com/example/
+│           ├── EmpleadosJwtIntegracionTest.java
+│           ├── EmpleadosResourceTest.java
+│           └── EmpleadosSeguridadTest.java
 ├── .gitignore
 ├── pom.xml
 ├── mvnw
@@ -197,11 +225,12 @@ El archivo `.env` es local y está excluido de Git; no se incluye en la estructu
 
 ## Estado del proyecto
 
-La API implementa los endpoints CRUD y `PATCH`. La suite automatizada pasó con 11 pruebas. Las operaciones CRUD se verificaron manualmente con PostgreSQL en Docker, incluyendo la persistencia de un empleado después de reiniciar Quarkus.
+La API implementa los endpoints CRUD y `PATCH`, protegidos mediante JWT y roles. La suite automatizada pasó con **17 pruebas, 0 fallos y 0 errores**. Las operaciones CRUD se verificaron manualmente con PostgreSQL en Docker, incluyendo la persistencia de un empleado después de reiniciar Quarkus.
 
 ## Documentación oficial
 
 - [Quarkus](https://quarkus.io/)
+- [Quarkus Security JWT](https://quarkus.io/guides/security-jwt)
 - [Hibernate ORM with Panache](https://quarkus.io/guides/hibernate-orm-panache)
 - [Configuración de bases de datos](https://quarkus.io/guides/datasource)
 - [OpenAPI y Swagger UI](https://quarkus.io/guides/openapi-swaggerui)
