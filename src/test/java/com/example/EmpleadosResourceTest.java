@@ -3,6 +3,7 @@ package com.example;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.stream.Location;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
+@TestSecurity(user = "admin-test", roles = {"ADMIN"})
 class EmpleadosResourceTest {
 
     @Test

@@ -2,15 +2,18 @@
 package com.example;
 
 import jakarta.json.JsonValue;
-import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonNumber;
+
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonNumber;
 import jakarta.ws.rs.Consumes;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -21,6 +24,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,10 +34,13 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class EmpleadosResource {
 
+    @Inject
+    JsonWebToken jwt;
 
 //BUSCAR
     @Operation(summary = "Buscar empleados")
     @APIResponse(responseCode = "200", description = "Lista obtenida")
+    @RolesAllowed("ADMIN")
     @GET
     public List<Empleado> listar() {
         return Empleado.listAll();
@@ -47,10 +54,15 @@ public class EmpleadosResource {
             @APIResponse(responseCode = "200", description = "Encontrado"),
             @APIResponse(responseCode = "404", description = "No encontrado")
     })
-
+    @RolesAllowed({"ADMIN", "EMPLEADO"})
     @GET
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") Long id) {
+        boolean esAdmin = jwt.getGroups() != null
+                && jwt.getGroups().contains("ADMIN");
+        if (!esAdmin && !id.toString().equals(jwt.getSubject())) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
         Empleado empleado = Empleado.findById(id);
         if (empleado == null) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -67,7 +79,7 @@ public class EmpleadosResource {
             @APIResponse(responseCode = "201", description = "Empleado creado"),
             @APIResponse(responseCode = "400", description = "Datos invalidos")
     })
-
+    @RolesAllowed("ADMIN")
     @POST
     @Transactional
     public Response crear(@Valid Empleado empleado) {
@@ -86,7 +98,7 @@ public class EmpleadosResource {
             @APIResponse(responseCode = "400", description = "Datos inválidos"),
             @APIResponse(responseCode = "404", description = "No encontrado")
     })
-
+    @RolesAllowed("ADMIN")
     @PUT
     @Path("/{id}")
     @Transactional
@@ -104,6 +116,8 @@ public class EmpleadosResource {
         return Response.ok(empleado).build();
     }
 
+
+//ACTUALIZAR PARCIAL
     @Operation(summary = "Actualizar parcialmente un empleado")
     @APIResponses({
             @APIResponse(responseCode = "200", description = "Actualizado",
@@ -114,6 +128,7 @@ public class EmpleadosResource {
             @APIResponse(responseCode = "400", description = "Datos inválidos"),
             @APIResponse(responseCode = "404", description = "No encontrado")
     })
+    @RolesAllowed("ADMIN")
      @PATCH
      @Path("/{id}")
      @Transactional
@@ -226,7 +241,7 @@ public class EmpleadosResource {
             @APIResponse(responseCode = "204", description = "Eliminado"),
             @APIResponse(responseCode = "404", description = "No encontrado")
     })
-
+    @RolesAllowed("ADMIN")
     @DELETE
     @Path("/{id}")
     @Transactional
