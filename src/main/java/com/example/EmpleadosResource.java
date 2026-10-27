@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.Consumes;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
@@ -26,7 +25,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Path("/empleados")
@@ -36,14 +34,16 @@ public class EmpleadosResource {
 
     @Inject
     JsonWebToken jwt;
+    @Inject
+    EmpleadoService empleadoService;
 
 //BUSCAR
     @Operation(summary = "Buscar empleados")
     @APIResponse(responseCode = "200", description = "Lista obtenida")
     @RolesAllowed("ADMIN")
     @GET
-    public List<Empleado> listar() {
-        return Empleado.listAll();
+    public List<EmpleadoResponse> listar() {
+       return empleadoService.listar();
     }
 
 
@@ -63,7 +63,7 @@ public class EmpleadosResource {
         if (!esAdmin && !id.toString().equals(jwt.getSubject())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-        Empleado empleado = Empleado.findById(id);
+        EmpleadoResponse empleado = empleadoService.buscarPorId(id);
         if (empleado == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(errorEmpleadoNoEncontrado(id))
@@ -81,12 +81,9 @@ public class EmpleadosResource {
     })
     @RolesAllowed("ADMIN")
     @POST
-    @Transactional
-    public Response crear(@Valid Empleado empleado) {
-        empleado.id = null;
-        empleado.persist();
-
-        URI location = URI.create("/empleados/" + empleado.id);
+    public Response crear(@Valid EmpleadoRequest datos) {
+        Long empleadoId = empleadoService.crear(datos);
+        URI location = URI.create("/empleados/" + empleadoId);
         return Response.created(location).build();
     }
 
@@ -101,19 +98,14 @@ public class EmpleadosResource {
     @RolesAllowed("ADMIN")
     @PUT
     @Path("/{id}")
-    @Transactional
-    public Response actualizar(@PathParam("id") Long id, @Valid Empleado datos) {
-        Empleado empleado = Empleado.findById(id);
-        if (empleado == null) {
+    public Response actualizar(@PathParam("id") Long id, @Valid EmpleadoRequest datos) {
+        EmpleadoResponse actualizado = empleadoService.actualizar(id, datos);
+        if (actualizado == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(errorEmpleadoNoEncontrado(id))
                     .build();
         }
-        empleado.nombre = datos.nombre;
-        empleado.departamento = datos.departamento;
-        empleado.puesto = datos.puesto;
-        empleado.salario = datos.salario;
-        return Response.ok(empleado).build();
+        return Response.ok(actualizado).build();
     }
 
 
@@ -123,7 +115,7 @@ public class EmpleadosResource {
             @APIResponse(responseCode = "200", description = "Actualizado",
             content = @Content(
                     mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = Empleado.class)
+                    schema = @Schema(implementation = EmpleadoResponse.class)
             )),
             @APIResponse(responseCode = "400", description = "Datos inválidos"),
             @APIResponse(responseCode = "404", description = "No encontrado")
@@ -131,7 +123,6 @@ public class EmpleadosResource {
     @RolesAllowed("ADMIN")
      @PATCH
      @Path("/{id}")
-     @Transactional
      @Consumes(MediaType.APPLICATION_JSON)
      public Response actualizarParcial(
              @PathParam("id") Long id,
@@ -151,87 +142,64 @@ public class EmpleadosResource {
                     .build();
         }
 
-        Empleado empleado = Empleado.findById(id);
-         if (empleado == null) {
-             return Response.status(Response.Status.NOT_FOUND)
-                     .entity(errorEmpleadoNoEncontrado(id))
-                     .build();
-         }
          String nuevoDepartamento = null;
          String nuevoPuesto = null;
          BigDecimal nuevoSalario = null;
 
          if (datos.containsKey("departamento")) {
-             if (datos.isNull("departamento")) {
+             if (datos.isNull("departamento")
+             || datos.get("departamento").getValueType()
+             != JsonValue.ValueType.STRING) {
                  return Response.status(Response.Status.BAD_REQUEST)
                          .build();
              }
-
-             if (datos.get("departamento").getValueType()
-                     != JsonValue.ValueType.STRING) {
+             nuevoDepartamento = datos.getString("departamento");
+             if (nuevoDepartamento.isBlank()) {
                  return Response.status(Response.Status.BAD_REQUEST)
                          .build();
              }
-
-             String departamento = datos.getString("departamento");
-             if (departamento.isBlank()) {
-                 return Response.status(Response.Status.BAD_REQUEST)
-                         .build();
-             }
-             nuevoDepartamento = departamento;
          }
 
         if (datos.containsKey("puesto")) {
-            if (datos.isNull("puesto")) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .build();
-            }
-
-        if (datos.get("puesto").getValueType()
+            if (datos.isNull("puesto")
+            || datos.get("puesto").getValueType()
             != JsonValue.ValueType.STRING) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .build();
             }
-
-        String puesto = datos.getString("puesto");
-        if (puesto.isBlank()) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .build();
+            nuevoPuesto = datos.getString("puesto");
+            if (nuevoPuesto.isBlank()) {
+                return  Response.status(Response.Status.BAD_REQUEST)
+                         .build();
             }
-            nuevoPuesto = puesto;
         }
 
          if (datos.containsKey("salario")) {
-             if (datos.isNull("salario")) {
+             if (datos.isNull("salario")
+             || datos.get("salario").getValueType()
+             != JsonValue.ValueType.NUMBER) {
                  return Response.status(Response.Status.BAD_REQUEST)
                          .build();
              }
-             if (datos.get("salario").getValueType() != JsonValue.ValueType.NUMBER) {
-                 return Response.status(Response.Status.BAD_REQUEST)
-                         .build();
-             }
+
              JsonNumber numeroSalario = datos.getJsonNumber("salario");
-            BigDecimal salario = numeroSalario.bigDecimalValue();
+             nuevoSalario = numeroSalario.bigDecimalValue();
 
-             if (salario.compareTo(BigDecimal.ZERO) <= 0
-                     || salario.compareTo(new BigDecimal("80000")) >= 0) {
+             if (nuevoSalario.compareTo(BigDecimal.ZERO) <= 0
+                     || nuevoSalario.compareTo(new BigDecimal("80000")) >= 0) {
                  return Response.status(Response.Status.BAD_REQUEST)
                          .build();
              }
-             nuevoSalario = salario;
+         }
+        EmpleadoResponse actualizado = empleadoService.actualizarParcial(
+                id, nuevoDepartamento,nuevoPuesto, nuevoSalario);
+         if (actualizado == null) {
+             return Response.status(Response.Status.NOT_FOUND)
+                     .entity(errorEmpleadoNoEncontrado(id))
+                     .build();
          }
 
-         if (nuevoDepartamento != null ){
-             empleado.departamento = nuevoDepartamento;
-         }
-         if (nuevoPuesto != null ){
-             empleado.puesto = nuevoPuesto;
-         }
-         if (nuevoSalario != null ) {
-             empleado.salario = nuevoSalario;
-         }
-
-         return Response.ok(empleado).build();
+         return Response.ok(actualizado).build();
      }
 
 
@@ -244,15 +212,12 @@ public class EmpleadosResource {
     @RolesAllowed("ADMIN")
     @DELETE
     @Path("/{id}")
-    @Transactional
     public Response eliminar(@PathParam("id") Long id) {
-        Empleado empleado = Empleado.findById(id);
-        if (empleado == null) {
+        if (!empleadoService.eliminar(id)) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(errorEmpleadoNoEncontrado(id))
                     .build();
         }
-        empleado.delete();
         return Response.noContent().build();
     }
 
