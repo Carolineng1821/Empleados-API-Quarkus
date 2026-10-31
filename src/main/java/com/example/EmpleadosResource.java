@@ -138,8 +138,7 @@ public class EmpleadosResource {
              JsonObject datos) {
 
         if (datos.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .build();
+            return errorValidacion("datos", "debe incluir al menos un campo");
         }
 
          String nuevoDepartamento = null;
@@ -150,13 +149,12 @@ public class EmpleadosResource {
              if (datos.isNull("departamento")
              || datos.get("departamento").getValueType()
              != JsonValue.ValueType.STRING) {
-                 return Response.status(Response.Status.BAD_REQUEST)
-                         .build();
+                 return errorValidacion("departamento", "debe ser texto");
+
              }
              nuevoDepartamento = datos.getString("departamento");
              if (nuevoDepartamento.isBlank()) {
-                 return Response.status(Response.Status.BAD_REQUEST)
-                         .build();
+                 return errorValidacion("departamento", "no debe estar vacío");
              }
          }
 
@@ -164,13 +162,11 @@ public class EmpleadosResource {
             if (datos.isNull("puesto")
             || datos.get("puesto").getValueType()
             != JsonValue.ValueType.STRING) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .build();
+                return errorValidacion("puesto", "debe ser texto");
             }
             nuevoPuesto = datos.getString("puesto");
             if (nuevoPuesto.isBlank()) {
-                return  Response.status(Response.Status.BAD_REQUEST)
-                         .build();
+                return errorValidacion("puesto", "no debe estar vacío");
             }
         }
 
@@ -178,8 +174,7 @@ public class EmpleadosResource {
              if (datos.isNull("salario")
              || datos.get("salario").getValueType()
              != JsonValue.ValueType.NUMBER) {
-                 return Response.status(Response.Status.BAD_REQUEST)
-                         .build();
+                 return errorValidacion("salario", "debe ser un número");
              }
 
              JsonNumber numeroSalario = datos.getJsonNumber("salario");
@@ -187,8 +182,7 @@ public class EmpleadosResource {
 
              if (nuevoSalario.compareTo(BigDecimal.ZERO) <= 0
                      || nuevoSalario.compareTo(new BigDecimal("80000")) >= 0) {
-                 return Response.status(Response.Status.BAD_REQUEST)
-                         .build();
+                 return errorValidacion("salario", "debe ser mayor que 0 y menos de 80,000");
              }
          }
         EmpleadoResponse actualizado = empleadoService.actualizarParcial(
@@ -222,11 +216,27 @@ public class EmpleadosResource {
     }
 
 //ERROR CENTRALIZADO
-    private RespuestaErrorRecurso errorEmpleadoNoEncontrado(Long id) {
-        return new RespuestaErrorRecurso(
+    private RespuestaError errorEmpleadoNoEncontrado(Long id) {
+        return new RespuestaError(
                 404,
                 "Empleado no encontrado",
-                "No existe un empleado con ID: " + id
+                "No existe un empleado con ID: " + id,
+                List.of()
         );
+    }
+
+
+    private Response errorValidacion(String campo, String mensaje) {
+        RespuestaError error = new RespuestaError(
+                400,
+                "Error de validación",
+                "Hay campos inválidos",
+                List.of(new DetalleValidacion(campo, mensaje))
+        );
+        return Response.status(Response.Status.BAD_REQUEST)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(error)
+                .build();
+
     }
 }

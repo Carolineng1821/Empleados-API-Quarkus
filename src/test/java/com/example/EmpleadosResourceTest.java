@@ -290,7 +290,14 @@ class EmpleadosResourceTest {
                 .when()
                 .patch("/empleados/" + id)
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("status", equalTo(400))
+                .body("error", equalTo("Error de validación"))
+                .body("mensaje", equalTo("Hay campos inválidos"))
+                .body("detalles.size()", equalTo(1))
+                .body("detalles[0].campo", equalTo("salario"))
+                .body("detalles[0].mensaje", equalTo("debe ser un número"));
+
 
         given()
                 .when()
@@ -327,8 +334,27 @@ class EmpleadosResourceTest {
                 .body("status", equalTo(404))
                 .body("error",equalTo("Empleado no encontrado"))
                 .body("mensaje", equalTo("No existe un empleado con ID: 99999"));
-        ;
     }
+
+    @Test
+    void patchVacioDevuelveErrorEstructurado() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {}
+                    """)
+                .when()
+                .patch("/empleados/99999")
+                .then()
+                .statusCode(400)
+                .body("status", equalTo(400))
+                .body("error", equalTo("Error de validación"))
+                .body("mensaje", equalTo("Hay campos inválidos"))
+                .body("detalles.size()", equalTo(1))
+                .body("detalles[0].campo", equalTo("datos"))
+                .body("detalles[0].mensaje", equalTo("debe incluir al menos un campo"));
+    }
+
 
     @Test
     void eliminarEmpleado() {

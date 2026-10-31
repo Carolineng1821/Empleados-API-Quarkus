@@ -9,9 +9,9 @@ public class RespuestaError {
     public String mensaje;
     public List<DetalleValidacion> detalles;
 
-    public RespuestaError(int status, String mensaje, List<DetalleValidacion> detalles) {
+    public RespuestaError(int status, String error, String mensaje, List<DetalleValidacion> detalles) {
         this.status = status;
-        this.error = "Error de validación";
+        this.error = error;
         this.mensaje = mensaje;
         this.detalles = detalles;
 

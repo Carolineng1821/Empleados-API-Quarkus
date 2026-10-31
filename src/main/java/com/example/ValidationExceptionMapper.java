@@ -25,6 +25,7 @@ public class ValidationExceptionMapper
        }
        RespuestaError respuesta = new RespuestaError(
                400,
+               "Error de validación",
                "Hay campos inválidos",
                detalles
        );
