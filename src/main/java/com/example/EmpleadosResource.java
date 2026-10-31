@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -51,8 +52,20 @@ public class EmpleadosResource {
 //BUSCAR POR ID
     @Operation(summary = "Buscar empleado por ID")
     @APIResponses({
-            @APIResponse(responseCode = "200", description = "Encontrado"),
-            @APIResponse(responseCode = "404", description = "No encontrado")
+            @APIResponse(
+                    responseCode = "200",
+                    description = "Encontrado",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = EmpleadoResponse.class)
+                    )),
+            @APIResponse(
+                    responseCode = "404",
+                    description = "No encontrado",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = RespuestaError.class)
+                    ))
     })
     @RolesAllowed({"ADMIN", "EMPLEADO"})
     @GET
@@ -76,8 +89,13 @@ public class EmpleadosResource {
 //CREAR
     @Operation(summary = "Crear empleado")
     @APIResponses({
-            @APIResponse(responseCode = "201", description = "Empleado creado"),
-            @APIResponse(responseCode = "400", description = "Datos invalidos")
+            @APIResponse(responseCode = "201", description = "Empleado creado",
+            headers = @Header(name = "Location",
+            description = "URL del empleado creado",
+            schema = @Schema(implementation = String.class))),
+            @APIResponse(responseCode = "400", description = "Datos inválidos",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            schema = @Schema(implementation = RespuestaError.class)))
     })
     @RolesAllowed("ADMIN")
     @POST
@@ -91,9 +109,15 @@ public class EmpleadosResource {
 //ACTUALIZAR
     @Operation(summary = "Actualizar empleado")
     @APIResponses({
-            @APIResponse(responseCode = "200", description = "Actualizado"),
-            @APIResponse(responseCode = "400", description = "Datos inválidos"),
-            @APIResponse(responseCode = "404", description = "No encontrado")
+            @APIResponse(responseCode = "200", description = "Actualizado",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            schema = @Schema(implementation = EmpleadoResponse.class))),
+            @APIResponse(responseCode = "400", description = "Datos inválidos",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            schema = @Schema(implementation = RespuestaError.class))),
+            @APIResponse(responseCode = "404", description = "No encontrado",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            schema = @Schema(implementation = RespuestaError.class)))
     })
     @RolesAllowed("ADMIN")
     @PUT
@@ -117,8 +141,12 @@ public class EmpleadosResource {
                     mediaType = MediaType.APPLICATION_JSON,
                     schema = @Schema(implementation = EmpleadoResponse.class)
             )),
-            @APIResponse(responseCode = "400", description = "Datos inválidos"),
-            @APIResponse(responseCode = "404", description = "No encontrado")
+            @APIResponse(responseCode = "400", description = "Datos inválidos",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            schema =  @Schema(implementation = RespuestaError.class))),
+            @APIResponse(responseCode = "404", description = "No encontrado",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            schema = @Schema(implementation = RespuestaError.class)))
     })
     @RolesAllowed("ADMIN")
      @PATCH
@@ -201,7 +229,9 @@ public class EmpleadosResource {
     @Operation(summary = "Eliminar empleado")
     @APIResponses({
             @APIResponse(responseCode = "204", description = "Eliminado"),
-            @APIResponse(responseCode = "404", description = "No encontrado")
+            @APIResponse(responseCode = "404", description = "No encontrado",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = RespuestaError.class)))
     })
     @RolesAllowed("ADMIN")
     @DELETE
