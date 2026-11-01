@@ -8,13 +8,13 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public class EmpleadoRequest {
-    @NotBlank
+    @NotBlank(message = "no debe estar vacío")
     public String nombre;
 
-    @NotBlank
+    @NotBlank(message = "no debe estar vacío")
     public String departamento;
 
-    @NotBlank
+    @NotBlank(message = "no debe estar vacío")
     public String puesto;
 
     @NotNull

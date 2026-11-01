@@ -11,11 +11,11 @@ import java.math.BigDecimal;
 
 @Entity
 public class Empleado extends PanacheEntity {
-    @NotBlank
+    @NotBlank(message = "no debe estar vacío")
     public String nombre;
-    @NotBlank
+    @NotBlank(message = "no debe estar vacío")
     public String departamento;
-    @NotBlank
+    @NotBlank(message = "no debe estar vacío")
     public String puesto;
     @NotNull
     @DecimalMin(value = "0", message = "El salario debe ser mayor que 0", inclusive = false)
